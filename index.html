@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบติดตามยา</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f7f9f9; padding: 20px; display: flex; justify-content: center; }
+    .form-box { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    h2 { color: #27ae60; text-align: center; margin-bottom: 20px; }
+    label { font-weight: bold; color: #2c3e50; font-size: 14px; margin-top: 15px; display: block; }
+    input { width: 100%; padding: 12px; margin-top: 8px; border: 1.5px solid #d5dbdb; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    input:focus { border-color: #27ae60; outline: none; }
+    .btn-submit { width: 100%; padding: 14px; background-color: #27ae60; color: white; border: none; border-radius: 8px; margin-top: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="form-box">
+    <h2>กรอกข้อมูลผู้ป่วย</h2>
+    <label>เลขประจำตัวผู้ป่วย (HN)</label>
+    <input type="text" id="hn" placeholder="เช่น 123456">
+    <label>เบอร์โทรศัพท์ (4 ตัวท้าย)</label>
+    <input type="number" id="phone" placeholder="เช่น 0987" maxlength="4" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
+    <button class="btn-submit" onclick="sendDataToChat()">ตรวจสอบสถานะ</button>
+  </div>
+
+  <script>
+    // 1. เริ่มต้นระบบ LIFF
+    async function main() {
+      await liff.init({ liffId: "2009135390-GqovlBEp" });
+    }
+    main();
+
+    // 2. ฟังก์ชันเมื่อกดปุ่มส่งข้อมูล
+    function sendDataToChat() {
+      var hn = document.getElementById('hn').value.trim();
+      var phone = document.getElementById('phone').value.trim();
+
+      if(hn === "" || phone === "") {
+        alert("กรุณากรอกข้อมูลให้ครบทั้ง 2 ช่องครับ");
+        return;
+      }
+
+      // 3. ส่งข้อมูลกลับเข้าไปในแชท
+      if (liff.isInClient()) {
+        liff.sendMessages([
+          {
+            type: "text",
+            text: hn + " " + phone
+          }
+        ]).then(() => {
+          liff.closeWindow(); // ปิดหน้าจออัตโนมัติ
+        }).catch((err) => {
+          alert("เกิดข้อผิดพลาด: " + err);
+        });
+      } else {
+        alert("กรุณาเปิดฟอร์มนี้ผ่านแอป LINE เท่านั้นครับ");
+      }
+    }
+  </script>
+</body>
+</html>
