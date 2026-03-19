@@ -11,8 +11,8 @@
     h2 { color: #27ae60; text-align: center; margin-bottom: 20px; }
     label { font-weight: bold; color: #2c3e50; font-size: 14px; margin-top: 15px; display: block; }
     input { width: 100%; padding: 12px; margin-top: 8px; border: 1.5px solid #d5dbdb; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    input:focus { border-color: #27ae60; outline: none; }
     .btn-submit { width: 100%; padding: 14px; background-color: #27ae60; color: white; border: none; border-radius: 8px; margin-top: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .loading { display: none; text-align: center; margin-top: 10px; color: #7f8c8d; }
   </style>
 </head>
 <body>
@@ -22,41 +22,55 @@
     <label>เลขประจำตัวผู้ป่วย (HN)</label>
     <input type="text" id="hn" placeholder="เช่น 123456">
     <label>เบอร์โทรศัพท์ (4 ตัวท้าย)</label>
-    <input type="number" id="phone" placeholder="เช่น 0987" maxlength="4" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
-    <button class="btn-submit" onclick="sendDataToChat()">ตรวจสอบสถานะ</button>
+    <input type="number" id="phone" placeholder="เช่น 0987">
+    <button class="btn-submit" id="btnSubmit" onclick="handleFormSubmit()">ตรวจสอบสถานะ</button>
+    <div id="loading" class="loading">กำลังส่งข้อมูล...</div>
   </div>
 
   <script>
-    // 1. เริ่มต้นระบบ LIFF
+    const webAppUrl = "https://script.google.com/macros/s/AKfycby34Zn4lnDJxpAFISKrWdu1elUAeBjkvF9CA0bD_bhygy2sZzPUVCf2xkUg8-29WgxpSg/exec";
+
     async function main() {
       await liff.init({ liffId: "2009135390-GqovlBEp" });
     }
     main();
 
-    // 2. ฟังก์ชันเมื่อกดปุ่มส่งข้อมูล
-    function sendDataToChat() {
-      var hn = document.getElementById('hn').value.trim();
-      var phone = document.getElementById('phone').value.trim();
+    async function handleFormSubmit() {
+      const hn = document.getElementById('hn').value.trim();
+      const phone = document.getElementById('phone').value.trim();
 
-      if(hn === "" || phone === "") {
-        alert("กรุณากรอกข้อมูลให้ครบทั้ง 2 ช่องครับ");
+      if(!hn || !phone) {
+        alert("กรุณากรอกข้อมูลให้ครบถ้วนครับ");
         return;
       }
 
-      // 3. ส่งข้อมูลกลับเข้าไปในแชท
-      if (liff.isInClient()) {
-        liff.sendMessages([
-          {
-            type: "text",
-            text: hn + " " + phone
-          }
-        ]).then(() => {
-          liff.closeWindow(); // ปิดหน้าจออัตโนมัติ
-        }).catch((err) => {
-          alert("เกิดข้อผิดพลาด: " + err);
+      document.getElementById('btnSubmit').disabled = true;
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        // 1. ดึง Profile เพื่อเอา userId (ไว้ให้บอททักกลับ)
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+
+        // 2. ส่งข้อมูลไปที่ Apps Script โดยตรง
+        await fetch(webAppUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "liff_push",
+            userId: userId,
+            hn: hn,
+            phone: phone
+          })
         });
-      } else {
-        alert("กรุณาเปิดฟอร์มนี้ผ่านแอป LINE เท่านั้นครับ");
+
+        // 3. ปิดหน้าต่าง (แชทจะว่างเปล่า ข้อมูลไม่โชว์)
+        liff.closeWindow();
+      } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err);
+        document.getElementById('btnSubmit').disabled = false;
+        document.getElementById('loading').style.display = 'none';
       }
     }
   </script>
