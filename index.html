@@ -3,56 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เข้าสู่ระบบติดตามยา</title>
+  <title>ระบบติดตามสถานะยา</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: 'Sarabun', sans-serif; background-color: #f7f9f9; padding: 20px; display: flex; justify-content: center; }
-    .form-box { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-    h2 { color: #27ae60; text-align: center; margin-bottom: 20px; }
-    label { font-weight: bold; color: #2c3e50; font-size: 14px; margin-top: 15px; display: block; }
-    input { width: 100%; padding: 12px; margin-top: 8px; border: 1.5px solid #d5dbdb; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    .btn-submit { width: 100%; padding: 14px; background-color: #27ae60; color: white; border: none; border-radius: 8px; margin-top: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
-    .loading { display: none; text-align: center; margin-top: 10px; color: #7f8c8d; }
+    body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+    .container { background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 380px; }
+    h2 { color: #27ae60; text-align: center; margin-bottom: 25px; }
+    label { font-weight: bold; display: block; margin-bottom: 8px; color: #34495e; }
+    input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ced4da; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    .btn { width: 100%; padding: 15px; background: #27ae60; color: #fff; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .btn:disabled { background: #bdc3c7; }
+    #loader { display: none; text-align: center; color: #7f8c8d; margin-top: 10px; }
   </style>
 </head>
 <body>
-
-  <div class="form-box">
-    <h2>กรอกข้อมูลผู้ป่วย</h2>
+  <div class="container">
+    <h2>ตรวจสอบสถานะยา</h2>
     <label>เลขประจำตัวผู้ป่วย (HN)</label>
-    <input type="text" id="hn" placeholder="เช่น 123456">
+    <input type="text" id="hn" placeholder="ระบุเลข HN">
     <label>เบอร์โทรศัพท์ (4 ตัวท้าย)</label>
-    <input type="number" id="phone" placeholder="เช่น 0987">
-    <button class="btn-submit" id="btnSubmit" onclick="handleFormSubmit()">ตรวจสอบสถานะ</button>
-    <div id="loading" class="loading">กำลังส่งข้อมูล...</div>
+    <input type="number" id="phone" placeholder="ระบุ 4 ตัวท้าย">
+    <button class="btn" id="submitBtn" onclick="submitForm()">ตรวจสอบข้อมูล</button>
+    <div id="loader">กำลังประมวลผล...</div>
   </div>
 
   <script>
     const webAppUrl = "https://script.google.com/macros/s/AKfycby34Zn4lnDJxpAFISKrWdu1elUAeBjkvF9CA0bD_bhygy2sZzPUVCf2xkUg8-29WgxpSg/exec";
 
-    async function main() {
+    async function initLiff() {
       await liff.init({ liffId: "2009135390-GqovlBEp" });
+      if (!liff.isLoggedIn()) { liff.login(); }
     }
-    main();
+    initLiff();
 
-    async function handleFormSubmit() {
+    async function submitForm() {
       const hn = document.getElementById('hn').value.trim();
       const phone = document.getElementById('phone').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const loader = document.getElementById('loader');
 
-      if(!hn || !phone) {
-        alert("กรุณากรอกข้อมูลให้ครบถ้วนครับ");
-        return;
-      }
+      if (!hn || !phone) { alert("กรุณากรอกข้อมูลให้ครบครับ"); return; }
 
-      document.getElementById('btnSubmit').disabled = true;
-      document.getElementById('loading').style.display = 'block';
+      btn.disabled = true;
+      loader.style.display = "block";
 
       try {
-        // 1. ดึง Profile เพื่อเอา userId (ไว้ให้บอททักกลับ)
         const profile = await liff.getProfile();
         const userId = profile.userId;
 
-        // 2. ส่งข้อมูลไปที่ Apps Script โดยตรง
         await fetch(webAppUrl, {
           method: "POST",
           mode: "no-cors",
@@ -65,12 +63,11 @@
           })
         });
 
-        // 3. ปิดหน้าต่าง (แชทจะว่างเปล่า ข้อมูลไม่โชว์)
         liff.closeWindow();
       } catch (err) {
         alert("เกิดข้อผิดพลาด: " + err);
-        document.getElementById('btnSubmit').disabled = false;
-        document.getElementById('loading').style.display = 'none';
+        btn.disabled = false;
+        loader.style.display = "none";
       }
     }
   </script>
